@@ -1,0 +1,41 @@
+- name: Install and configure tuned daemon
+  hosts: servers
+  become: yes
+
+  tasks:
+  - name: Update apt cache
+    ansible.builtin.apt:
+      update_cache: yes
+      cache_valid_time: 3600
+
+  - name: Install tuned package
+    ansible.builtin.apt:
+      name: tuned
+      state: present
+
+  - name: Ensure tuned service is started and enabled
+    ansible.builtin.systemd_service:
+      name: tuned
+      state: started
+      enabled: yes
+      daemon_reload: yes
+
+  - name: Verify tuned service status
+    ansible.builtin.command:
+      cmd: systemctl is-active tuned
+    register: tuned_status
+    changed_when: false
+    failed_when: tuned_status.rc != 0
+
+  - name: Verify tuned service is enabled
+    ansible.builtin.command:
+      cmd: systemctl is-enabled tuned
+    register: tuned_enabled
+    changed_when: false
+    failed_when: tuned_enabled.stdout != "enabled"
+
+  - name: Show tuned status
+    ansible.builtin.debug:
+      msg:
+      - "tuned is active: {{ tuned_status.stdout }}"
+      - "tuned is enabled: {{ tuned_enabled.stdout }}"

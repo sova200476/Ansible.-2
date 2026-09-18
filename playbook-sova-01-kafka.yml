@@ -1,0 +1,50 @@
+---
+- name: Download and extract Apache Kafka archive
+  hosts: servers
+  become: yes
+  vars:
+    kafka_version: "3.7.0"
+    kafka_archive: "kafka_2.13-{{ kafka_version }}.tgz"
+    kafka_download_url: "https://archive.apache.org/dist/kafka/{{ kafka_version }}/{{ kafka_archive }}"
+    download_dir: "/opt/downloads"
+    extract_dir: "/opt/kafka"
+
+  tasks:
+  - name: Create download directory
+    ansible.builtin.file:
+      path: "{{ download_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: '0755'
+
+  - name: Download Kafka archive
+    ansible.builtin.get_url:
+      url: "{{ kafka_download_url }}"
+      dest: "{{ download_dir }}/{{ kafka_archive }}"
+      owner: root
+      group: root
+      mode: '0644'
+      force: no
+
+  - name: Create extraction directory
+    ansible.builtin.file:
+      path: "{{ extract_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: '0755'
+
+  - name: Extract Kafka archive
+    ansible.builtin.unarchive:
+      src: "{{ download_dir }}/{{ kafka_archive }}"
+      dest: "{{ extract_dir }}"
+      remote_src: yes
+      extra_opts:
+      - --no-same-owner
+    register: extract_result
+
+  - name: Show extraction result
+    ansible.builtin.debug:
+      msg: "Archive extracted successfully to {{ extract_dir }}"
+    when: extract_result.changed
